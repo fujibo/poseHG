@@ -38,15 +38,15 @@ class MPIIDataset(DatasetMixin):
         return len(self.paths)
 
     def get_example(self, i):
-
         img_path = f'{self._root}/images/{self.paths[i]}'
         img = utils.read_image(img_path)
 
         keypoint = self.keypoints[i]
-        if chainer.config.train:
+        if self._split == 'train':
             img, label, idx = preprocess(img, keypoint)
             return img, label, idx
 
+        # 'val' or 'test'
         else:
             point = list()
             idx = list()
@@ -63,7 +63,10 @@ class MPIIDataset(DatasetMixin):
             point = np.array(point)
             idx = np.array(idx)
 
-            return img, point, idx, self.head_sizes[i]
+            shape = img.shape
+            img = transforms.resize(img, (256, 256))
+
+            return img, point, idx, self.head_sizes[i], shape
 
 
 def read_mpii_annots(fname, split):
@@ -149,14 +152,14 @@ def preprocess(img, keypoint):
     shape = img.shape[1:]
     img = transforms.resize(img, (256, 256))
 
-    if chainer.config.train:
-        # rotate [-30, 30]
-        angle = np.random.uniform(-30, 30)
-        img = vision.rotate(img, angle)
+    # data augmenation
+    # rotate [-30, 30]
+    angle = np.random.uniform(-30, 30)
+    img = vision.rotate(img, angle)
 
-        # scale [0.75, 1.25]
-        scale = np.random.uniform(0.75, 1.25)
-        img = vision.zoom(img, scale)
+    # scale [0.75, 1.25]
+    scale = np.random.uniform(0.75, 1.25)
+    img = vision.zoom(img, scale)
 
     # key point processing
     heatmap = np.zeros((16, 64, 64), dtype=np.float32)
@@ -170,6 +173,7 @@ def preprocess(img, keypoint):
         else:
             point_resized = transforms.resize_point(point[np.newaxis], shape, (64, 64))
             y, x = point_resized[0].astype(np.int64)
+            y, x = min(y, 63), min(x, 63)
 
             heatmap[i, y, x] = 1
             heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
