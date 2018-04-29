@@ -107,7 +107,7 @@ def preprocess(img, keypoint):
     """preprocess image and keypoint
     Args:
         img: CxHxW
-        keypoint: {'x': [None]*16, 'y': [None]*16, 'visible': [None]*16}
+        keypoint: dict {'x': [None]*16, 'y': [None]*16, 'visible': [None]*16}
     Returns:
         img: shape Cx256x256, (not copied)
         heatmap: shape 16x64x64
