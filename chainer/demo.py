@@ -90,8 +90,10 @@ def main():
 
     if args.gpu >= 0:
         img_resized = cuda.to_gpu(img_resized)
-    # (1, 3, 256, 256) -> (1, 16, 64, 64) -> (16, 64, 64)
-    _output, output = model(img_resized)
+
+    with chainer.no_backprop_mode():
+        # (1, 3, 256, 256) -> (1, 16, 64, 64) -> (16, 64, 64)
+        _output, output = model(img_resized)
     output = cuda.to_cpu(output.array)[0]
 
     C, H, W = output.shape
