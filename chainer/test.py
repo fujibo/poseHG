@@ -1,8 +1,11 @@
-import unittest
-import numpy as np
-
-from net import StackedHG
+import chainer
 from dataset import MPIIDataset
+
+import numpy as np
+from net import StackedHG
+
+import unittest
+
 
 class NetTest(unittest.TestCase):
 
@@ -24,10 +27,13 @@ class DatasetTest(unittest.TestCase):
         self.dataset = MPIIDataset()
         print('loaded')
 
+    def get_example_train(self):
+        out = self.dataset.get_example(12)
+        print(out)
+
     def get_example_test(self):
-        dataset = MPIIDataset()
-        out = dataset.get_example(12)
-        # dataset.get_example(62)
+        with chainer.using_config('train', False):
+            out = self.dataset.get_example(62)
         print(out)
 
 

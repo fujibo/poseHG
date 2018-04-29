@@ -15,6 +15,12 @@ from scipy.ndimage.filters import gaussian_filter
 class MPIIDataset(DatasetMixin):
     """MPII dataset
     get_example returns img, heatmap, idx available for training
+
+    Args:
+        split: str 'train', 'val'
+
+    Returns:
+        dataset
     """
     def __init__(self, root='~/data/MPII', split='train'):
         super(MPIIDataset, self).__init__()
@@ -22,10 +28,11 @@ class MPIIDataset(DatasetMixin):
         self._split = split
 
         fname = f'{self._root}/annotations/mpii_human_pose_v1_u12_1.mat'
-        paths, annots =  read_mpii_annots(fname, split)
+        paths, keypoints, head_sizes =  read_mpii_annots(fname, split)
 
         self.paths = paths
-        self.keypoints = annots
+        self.keypoints = keypoints
+        self.head_sizes = head_sizes
 
     def __len__(self):
         return len(self.paths)
@@ -36,9 +43,27 @@ class MPIIDataset(DatasetMixin):
         img = utils.read_image(img_path)
 
         keypoint = self.keypoints[i]
-        img, label, idx = preprocess(img, keypoint)
+        if chainer.config.train:
+            img, label, idx = preprocess(img, keypoint)
+            return img, label, idx
 
-        return img, label, idx
+        else:
+            point = list()
+            idx = list()
+            for i, (x, y) in enumerate(zip(keypoint['x'], keypoint['y'])):
+                if None in (x, y):
+                    # NOTE: should not be used
+                    point.append((-1, -1))
+                    idx.append(False)
+
+                else:
+                    point.append((y, x))
+                    idx.append(True)
+
+            point = np.array(point)
+            idx = np.array(idx)
+
+            return img, point, idx, self.head_sizes[i]
 
 
 def read_mpii_annots(fname, split):
@@ -48,10 +73,10 @@ def read_mpii_annots(fname, split):
         split: str, 'train' or 'val'
     Returns:
         paths: list of str
-        annotations: list of dict
+        keypoints: list of dict
+        head_size: list of float
     """
     # TODO: implimentation of train, val split
-
     path_cache = 'mpii.pickle'
     if os.path.exists(path_cache):
         with open(path_cache, 'rb') as f:
@@ -64,7 +89,9 @@ def read_mpii_annots(fname, split):
             pickle.dump(arr, f)
 
     paths = list()
-    annotations = list()
+    keypoints = list()
+    head_size = list()
+
     for data_idx in np.where(arr.img_train == 1)[0]:
         annot = arr.annolist[data_idx]
         path = annot.image.name
@@ -94,13 +121,18 @@ def read_mpii_annots(fname, split):
                 keypoint['y'][point.id] = point.y
                 keypoint['visible'][point.id] = bool(point.is_visible)
 
+            # http://human-pose.mpi-inf.mpg.de/results/mpii_human_pose/evalMPII.zip
+            SC_BIAS = 0.8 * 0.75
+            head_size.append(SC_BIAS * np.linalg.norm([an.x2 - an.x1, an.y2 - an.y1]))
+
             paths.append(path)
-            annotations.append(keypoint)
+            keypoints.append(keypoint)
 
+    head_size = np.array(head_size)
     print(len(paths))
-    assert len(paths) == len(annotations)
+    assert len(paths) == len(keypoints)
 
-    return paths, annotations
+    return paths, keypoints, head_size
 
 
 def preprocess(img, keypoint):
@@ -133,15 +165,20 @@ def preprocess(img, keypoint):
         point = np.array((y, x))
 
         if None in (x, y):
-            continue
+            indices.append(False)
+
         else:
             point_resized = transforms.resize_point(point[np.newaxis], shape, (64, 64))
             y, x = point_resized[0].astype(np.int64)
 
             heatmap[i, y, x] = 1
             heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
-            indices.append(i)
+            indices.append(True)
 
     indices = np.array(indices)
 
     return img, heatmap, indices
+
+
+if __name__ == '__main__':
+    dataset = MPIIDataset()
