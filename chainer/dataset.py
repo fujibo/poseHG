@@ -79,7 +79,10 @@ def read_mpii_annots(fname, split):
         keypoints: list of dict
         head_size: list of float
     """
-    # TODO: implimentation of train, val split
+    with open('./valid_images.txt') as f:
+        text = f.read()
+        validation = text.split('\n')[:-1]
+
     path_cache = 'mpii.pickle'
     if os.path.exists(path_cache):
         with open(path_cache, 'rb') as f:
@@ -98,6 +101,10 @@ def read_mpii_annots(fname, split):
     for data_idx in np.where(arr.img_train == 1)[0]:
         annot = arr.annolist[data_idx]
         path = annot.image.name
+
+        if split == 'train':
+            if path in validation:
+                continue
 
         # there are some people
         if type(annot.annorect) is np.ndarray or type(annot.annorect) is list:
