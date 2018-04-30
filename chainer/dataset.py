@@ -49,42 +49,13 @@ class MPIIDataset(DatasetMixin):
         scale = self.scales[i]
 
         if self._split == 'train':
-            img, label, idx = preprocess(img, keypoint, center, scale)
+            img, label, idx = preprocess(img, keypoint, center, scale, self._split)
             return img, label, idx
 
         # 'val' or 'test'
         else:
-            shape = img.shape
-
-            xmin, xmax = center[0] - scale/2, center[0] + scale/2
-            ymin, ymax = center[1] - scale/2, center[1] + scale/2
-
-            # truncate
-            xmin = int(max(0, xmin))
-            ymin = int(max(0, ymin))
-            xmax = int(min(shape[2], xmax))
-            ymax = int(min(shape[1], ymax))
-
-            # croping
-            img = img[:,ymin:ymax, xmin:xmax]
-            point = list()
-            idx = list()
-            for i, (x, y) in enumerate(zip(keypoint['x'], keypoint['y'])):
-                if None in (x, y):
-                    # NOTE: should not be used
-                    point.append((-1, -1))
-                    idx.append(False)
-
-                else:
-                    point.append((y-ymin, x-xmin))
-                    idx.append(True)
-
-            point = np.array(point)
-            idx = np.array(idx)
-
-            img = transforms.resize(img, (256, 256))
-
-            return img, point, idx, self.head_sizes[i], (ymax-ymin, xmax-xmin)
+            img, point, idx, shape = preprocess(img, keypoint, center, scale, self._split)
+            return img, point, idx, self.head_sizes[i], shape
 
 
 def read_mpii_annots(fname, split):
@@ -175,13 +146,14 @@ def read_mpii_annots(fname, split):
     return paths, keypoints, head_size, centers, scales
 
 
-def preprocess(img, keypoint, center, scale):
+def preprocess(img, keypoint, center, scale, mode='train'):
     """preprocess image and keypoint
     Args:
         img: CxHxW
         keypoint: dict {'x': [None]*16, 'y': [None]*16, 'visible': [None]*16}
         center: [x, y] center of a person
         scale: float, size of a person
+        mode: 'train', 'val', 'test'
     Returns:
         img: shape Cx256x256, (not copied)
         heatmap: shape 16x64x64
@@ -203,40 +175,52 @@ def preprocess(img, keypoint, center, scale):
     img = img[:, ymin:ymax, xmin:xmax]
     img = transforms.resize(img, (256, 256))
 
-    # data augmenation
-    # rotate [-30, 30]
-    angle = np.random.uniform(-30, 30)
-    img = vision.rotate(img, angle)
-
-    # scale [0.75, 1.25]
-    scale = np.random.uniform(0.75, 1.25)
-    img = vision.zoom(img, scale)
-
     # key point processing
-    heatmap = np.zeros((16, 64, 64), dtype=np.float32)
     indices = list()
+    points = list()
     for i, (x, y) in enumerate(zip(keypoint['x'], keypoint['y'])):
-
         if None in (x, y):
+            point = (-1000, -1000)
             indices.append(False)
 
         else:
-            point = np.array((y - ymin, x - xmin))
-            point_resized = transforms.resize_point(point[np.newaxis], shape[1:], (64, 64))
-            y, x = point_resized[0].astype(np.int64)
-            y, x = min(y, 63), min(x, 63)
-
-            heatmap[i, y, x] = 1
-            heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
+            point = (y - ymin, x - xmin)
             indices.append(True)
 
-    # apply data augmetation to heatmap
-    heatmap = vision.rotate(heatmap, angle)
-    heatmap = vision.zoom(heatmap, scale)
+        points.append(point)
 
+    points = np.array(points)
     indices = np.array(indices)
 
-    return img, heatmap, indices
+    if mode == 'train':
+        points_resized = transforms.resize_point(points, shape[1:], (64, 64))
+        points_resized = points_resized.astype(np.int64)
+        points_resized[points_resized < 0] = 0
+        points_resized[points_resized > 63] = 63
+
+        heatmap = np.zeros((16, 64, 64), dtype=np.float32)
+        for i, (available, point) in enumerate(zip(indices, points_resized)):
+            if available:
+                y, x = point
+                heatmap[i, y, x] = 1
+                heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
+
+        # data augmetation
+        # rotate [-30, 30]
+        angle = np.random.uniform(-30, 30)
+        img = vision.rotate(img, angle)
+        heatmap = vision.rotate(heatmap, angle)
+
+        # scale [0.75, 1.25]
+        scale_zoom = np.random.uniform(0.75, 1.25)
+        img = vision.zoom(img, scale_zoom)
+        heatmap = vision.zoom(heatmap, scale_zoom)
+
+
+        return img, heatmap, indices
+
+    else:
+        return img, points, indices, (ymax-ymin, xmax-xmin)
 
 
 if __name__ == '__main__':
