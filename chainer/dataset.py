@@ -131,7 +131,7 @@ def read_mpii_annots(fname, split):
             SC_BIAS = 0.8 * 0.75
             head_size.append(SC_BIAS * np.linalg.norm([an.x2 - an.x1, an.y2 - an.y1]))
 
-            center = [(an.x1 + an.x2)/2, (an.y1 + an.y2)/2]
+            center = [an.objpos.x, an.objpos.y]
             scale = an.scale * 200
 
             paths.append(path)
