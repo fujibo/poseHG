@@ -179,6 +179,10 @@ def preprocess(img, keypoint):
             heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
             indices.append(True)
 
+    # apply data augmetation to heatmap
+    heatmap = vision.rotate(heatmap, angle)
+    heatmap = vision.zoom(heatmap, scale)
+
     indices = np.array(indices)
 
     return img, heatmap, indices
