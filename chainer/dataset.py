@@ -106,6 +106,10 @@ def read_mpii_annots(fname, split):
             if path in validation:
                 continue
 
+        if split == 'val':
+            if not path in validation:
+                continue
+
         # there are some people
         if type(annot.annorect) is np.ndarray or type(annot.annorect) is list:
             pass
