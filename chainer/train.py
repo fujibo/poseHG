@@ -4,9 +4,9 @@ from chainer import functions as F
 
 from chainer import training, serializers
 from chainer.training import extensions
+
 from chainer.backends import cuda
 
-import numpy as np
 from net import StackedHG
 
 
@@ -24,7 +24,8 @@ class TrainChain(chainer.Chain):
             output1, output2 = self.model(img)
 
             # calculate MSE
-            loss = (output1 - heatmap) ** 2 + (output2 - heatmap) ** 2
+            with cuda.get_device_from_id(self._device_id):
+                loss = (output1 - heatmap) ** 2 + (output2 - heatmap) ** 2
 
             # (N, 16, 64, 64) -> (N, 16)
             loss = F.sum(F.sum(loss, axis=3), axis=2)
@@ -43,7 +44,7 @@ class TrainChain(chainer.Chain):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu', type=int, default=-1)
+    parser.add_argument('--gpu', type=str, default='-1')
     parser.add_argument('--out', default='results/temp')
     parser.add_argument('--resume', default='')
     parser.add_argument('--dataset', choices=['mpii', 'flic'], default='mpii')
@@ -53,19 +54,26 @@ def main():
         from dataset import MPIIDataset
         train_data = MPIIDataset(split='train')
 
+    # '0,1' -> [0, 1]
+    gpus = list(map(lambda device: int(device), args.gpu.split(',')))
+    devices = {'main': gpus[0]}
+
+    if len(gpus) >= 2:
+        devices.update({'second': gpus[1]})
+
     model = StackedHG(16)
     train_chain = TrainChain(model)
 
-    if args.gpu >= 0:
-        cuda.get_device_from_id(args.gpu).use()
-        train_chain.to_gpu()
+    if devices['main'] >= 0:
+        cuda.get_device_from_id(devices['main']).use()
 
     optimizer = chainer.optimizers.RMSprop(lr=2.5e-4)
     optimizer.setup(train_chain)
 
-    train_iter = chainer.iterators.MultithreadIterator(train_data, 6, repeat=True, shuffle=True, n_threads=3)
+    # original batch size 6
+    train_iter = chainer.iterators.MultithreadIterator(train_data, 32, repeat=True, shuffle=True, n_threads=3)
 
-    updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
+    updater = training.ParallelUpdater(train_iter, optimizer, devices=devices)
     trainer = training.Trainer(updater, (100, 'epoch'), out=args.out)
 
     interval = 1, 'epoch'
