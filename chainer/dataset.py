@@ -193,7 +193,7 @@ def preprocess(img, keypoint, center, scale, mode='train'):
     indices = np.array(indices)
 
     if mode == 'train':
-        points_resized = transforms.resize_point(points, shape[1:], (64, 64))
+        points_resized = transforms.resize_point(points, (ymax-ymin, xmax-xmin), (64, 64))
         points_resized = points_resized.astype(np.int64)
         points_resized[points_resized < 0] = 0
         points_resized[points_resized > 63] = 63
