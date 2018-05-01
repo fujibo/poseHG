@@ -139,6 +139,10 @@ def read_mpii_annots(fname, split):
             centers.append(center)
             scales.append(scale)
 
+            # in validation, we use only a part of annotations
+            if split == 'val':
+                break
+
     head_size = np.array(head_size)
     print(len(paths))
     assert len(paths) == len(keypoints)
