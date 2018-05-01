@@ -2,7 +2,7 @@ import numpy as np
 import tempfile
 
 
-def snap2model(path_snapshot, path_model=None):
+def snap2model_parser(path_snapshot, path_model=None):
     """convert snapshot to model
 
     :param path_snapshot: str
@@ -28,3 +28,33 @@ def snap2model(path_snapshot, path_model=None):
     else:
         np.savez(path_model, **model)
         return None
+
+
+def snap2model_trainer(path_snapshot, path_model=None):
+    import chainer
+    from dataset import MPIIDataset
+    from train import TrainChain
+    from net import StackedHG
+
+    train_data = MPIIDataset(split='train')
+    model = StackedHG(16)
+    train_chain = TrainChain(model)
+    optimizer = chainer.optimizers.RMSprop(lr=2.5e-4)
+    optimizer.setup(train_chain)
+
+    # original batch size 6
+    train_iter = chainer.iterators.SerialIterator(train_data, 1, repeat=True, shuffle=True)
+    updater = chainer.training.StandardUpdater(train_iter, optimizer, device=-1)
+    trainer = chainer.training.Trainer(updater, (100, 'epoch'), out='')
+    chainer.serializers.load_npz(path_snapshot, trainer)
+
+    if path_model is None:
+        outfile = tempfile.TemporaryFile()
+        chainer.serializers.save_npz(outfile, model)
+        outfile.seek(0)
+        return outfile
+
+    else:
+        chainer.serializers.save_npz(path_model, model)
+        return None
+
