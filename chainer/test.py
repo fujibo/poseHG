@@ -46,10 +46,52 @@ class MetricsTest(unittest.TestCase):
 
     def setUp(self):
         self.dataset = MPIIDataset(split='val')
+        # NOTE: their validation and our validation is not identical.
         self.preds = h5py.File('../../pose-hg-demo/preds/valid-example.h5')['preds'].value
+        annot = h5py.File('../../pose-hg-demo/annot/valid.h5')
+
+        self.annot = dict()
+        for key, value in annot.items():
+            self.annot.update({key: value.value})
 
     def evaluate(self):
-        pass
+        points = list()
+        indices = list()
+        scales = list()
+
+        for i in range(self.preds.shape[0]):
+            keypoint = self.annot['part'][i]
+            scale = self.annot['normalize'][i]
+
+            point = np.zeros((16, 2), dtype=np.float)
+            idx = np.zeros(16, dtype=np.bool)
+            for i, (x, y) in enumerate(keypoint):
+                if np.all(np.isclose((x, y), (0, 0))):
+                    # NOTE: should not be used
+                    point[i] = (-1, -1)
+                    idx[i] = False
+
+                else:
+                    point[i] = (y, x)
+                    idx[i] = True
+
+            points.append(point)
+            indices.append(idx)
+            scales.append(scale)
+
+        from eval import pckh_score
+        corrects, counts = pckh_score(points, self.preds[:, :, ::-1], indices, scales)
+
+        # ignores 6, 7, 8
+        joints = {'head': [8, 9], 'shoulder': [12, 13], 'elbow': [11, 14],
+                  'wrist': [10, 15], 'hip': [2, 3], 'knee': [1, 4], 'ankle': [0, 5]}
+
+        scores = dict()
+        for key, value in joints.items():
+            score = corrects[value].sum() / counts[value].sum()
+            scores.update({key: score})
+        print(scores)
+
         # assert(len(self.dataset) == self.preds.shape[0])
         # for i in range(self.dataset):
         #     img, label, idx, scale, shape = self.dataset[i]
