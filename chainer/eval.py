@@ -83,7 +83,7 @@ def evaluate(model, dataset, device=-1):
     corrects = np.sum(corrects, axis=0)
     counts = np.sum(counts, axis=0)
     # Head, Shoulder, Elbow, Wrist, Hip, Knee, Ankle
-    joints = {'head': [9, ], 'shoulder': [12, 13], 'elbow': [11, 14],
+    joints = {'head': [8, 9], 'shoulder': [12, 13], 'elbow': [11, 14],
               'wrist': [10, 15], 'hip': [2, 3], 'knee': [1, 4], 'ankle': [0, 5]}
 
     scores = dict()
