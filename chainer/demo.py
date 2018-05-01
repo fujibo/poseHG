@@ -8,6 +8,8 @@ import cv2
 
 import os
 
+from snap2model import snap2model_trainer
+
 
 class MPIIVisualizer(object):
     def __init__(self):
@@ -64,11 +66,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=-1)
     parser.add_argument('--model', default='')
+    parser.add_argument('--snapshot', default='')
     parser.add_argument('--image')
 
     args = parser.parse_args()
-    if args.image is None:
-        ValueError('args.image should not be None')
+    if not args.image:
+        ValueError('args.image should be specified.')
 
     else:
         args.image = os.path.expanduser(args.image)
@@ -77,6 +80,9 @@ def main():
 
     if args.model:
         chainer.serializers.load_npz(args.model, model)
+
+    elif args.snapshot:
+        chainer.serializers.load_npz(snap2model_trainer(args.snapshot), model)
 
     if args.gpu >= 0:
         cuda.get_device_from_id(args.gpu).use()
