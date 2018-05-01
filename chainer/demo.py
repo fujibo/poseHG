@@ -29,7 +29,7 @@ class MPIIVisualizer(object):
     def run(self, img, keypoint):
         """
 
-        :param img: np.ndarray shape [C, H, W]
+        :param img: np.ndarray shape [H, W, C] (by using cv2)
         :param keypoint: np.ndarray shape [16, 2], y, x
         :return:
         """
