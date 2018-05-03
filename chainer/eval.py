@@ -9,8 +9,7 @@ from dataset import MPIIDataset
 import os
 
 from chainer.dataset import concat_examples
-
-from tqdm import tqdm
+from snap2model import snap2model_trainer
 
 
 def pckh_score(keypoint_true, keypoint_pred, idx, scale):
@@ -45,6 +44,8 @@ def evaluate(model, dataset, device=-1):
     counts = list()
 
     for it, batch in enumerate(data_iter):
+        # print progress
+        print(f'{100*it:04d} / {len(dataset):04d}', end='\r')
 
         img, label, idx, scale, shape = concat_examples(batch)
         if device >= 0:
@@ -66,7 +67,7 @@ def evaluate(model, dataset, device=-1):
             keypoint = np.unravel_index(out_reshaped, (H, W))
             # (2, 16) -> (16, 2)
             keypoint = np.array(keypoint).T
-            keypoint = transforms.resize_point(keypoint, (H, W), shape[i][1:])
+            keypoint = transforms.resize_point(keypoint, (H, W), shape[i])
             keypoints.append(keypoint)
 
         else:
@@ -76,10 +77,7 @@ def evaluate(model, dataset, device=-1):
         corrects.append(correct)
         counts.append(count)
 
-        # DEBUG
-        # if it == 2:
-        #     break
-
+    print()
     corrects = np.sum(corrects, axis=0)
     counts = np.sum(counts, axis=0)
     # Head, Shoulder, Elbow, Wrist, Hip, Knee, Ankle
@@ -98,6 +96,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=-1)
     parser.add_argument('--model', default='')
+    parser.add_argument('--snapshot', default='')
+
 
     args = parser.parse_args()
 
@@ -105,6 +105,9 @@ def main():
 
     if args.model:
         chainer.serializers.load_npz(args.model, model)
+
+    elif args.snapshot:
+        chainer.serializers.load_npz(snap2model_trainer(args.snapshot), model)
 
     if args.gpu >= 0:
         cuda.get_device_from_id(args.gpu).use()
