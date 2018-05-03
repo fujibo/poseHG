@@ -1,4 +1,3 @@
-import chainer
 from dataset import MPIIDataset
 
 import h5py
@@ -90,6 +89,8 @@ class MetricsTest(unittest.TestCase):
         for key, value in joints.items():
             score = corrects[value].sum() / counts[value].sum()
             scores.update({key: score})
+
+        # this outputs same score with pose-hg-demo/main.lua
         print(scores)
 
         # assert(len(self.dataset) == self.preds.shape[0])
