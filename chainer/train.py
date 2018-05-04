@@ -71,7 +71,12 @@ def main():
     optimizer.setup(train_chain)
 
     # original batch size 6
-    train_iter = chainer.iterators.MultithreadIterator(train_data, 32, repeat=True, shuffle=True, n_threads=3)
+    if len(gpus) >= 2:
+        batch_size = 32
+    else:
+        batch_size = 16
+    
+    train_iter = chainer.iterators.MultithreadIterator(train_data, batch_size, repeat=True, shuffle=True, n_threads=3)
 
     updater = training.ParallelUpdater(train_iter, optimizer, devices=devices)
     trainer = training.Trainer(updater, (100, 'epoch'), out=args.out)
