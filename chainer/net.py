@@ -124,8 +124,8 @@ class StackedHG(chainer.Chain):
         h = self.hg1(h)
 
         # l1 and l2
-        h = self.bn1_1(self.conv1_1(h))
-        h = self.bn1_2(self.conv1_2(h))
+        h = F.relu(self.bn1_1(self.conv1_1(h)))
+        h = F.relu(self.bn1_2(self.conv1_2(h)))
 
         out_1 = self.conv1_3a(h)
 
@@ -133,8 +133,8 @@ class StackedHG(chainer.Chain):
 
         # l3 and l4
         h = self.hg2(in_2)
-        h = self.bn2_1(self.conv2_1(h))
-        h = self.bn2_2(self.conv2_2(h))
+        h = F.relu(self.bn2_1(self.conv2_1(h)))
+        h = F.relu(self.bn2_2(self.conv2_2(h)))
 
         out_2 = self.conv2_3a(h)
 
