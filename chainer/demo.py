@@ -67,7 +67,7 @@ def main():
     parser.add_argument('--gpu', type=int, default=-1)
     parser.add_argument('--model', default='')
     parser.add_argument('--snapshot', default='')
-    parser.add_argument('--image')
+    parser.add_argument('--image', type=str)
 
     args = parser.parse_args()
     if not args.image:
