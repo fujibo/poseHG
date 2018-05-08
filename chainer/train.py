@@ -66,7 +66,9 @@ def main():
 
     if devices['main'] >= 0:
         cuda.get_device_from_id(devices['main']).use()
-
+    
+    # 2.5 / 6 * 32
+    # optimizer = chainer.optimizers.RMSprop(lr=1.33e-3)
     optimizer = chainer.optimizers.RMSprop(lr=2.5e-4)
     optimizer.setup(train_chain)
 
@@ -74,7 +76,7 @@ def main():
     if len(gpus) >= 2:
         batch_size = 32
     else:
-        batch_size = 16
+        batch_size = 6
     
     train_iter = chainer.iterators.MultithreadIterator(train_data, batch_size, repeat=True, shuffle=True, n_threads=3)
 
