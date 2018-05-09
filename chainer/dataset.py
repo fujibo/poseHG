@@ -21,6 +21,12 @@ class MPIIDataset(DatasetMixin):
 
     Returns:
         dataset
+
+    self.keypoints
+        0 - r ankle, 1 - r knee, 2 - r hip, 3 - l hip,
+        4 - l knee, 5 - l ankle, 6 - pelvis, 7 - thorax,
+        8 - upper neck, 9 - head top, 10 - r wrist, 11 - r elbow,
+        12 - r shoulder, 13 - l shoulder, 14 - l elbow, 15 - l wrist
     """
     def __init__(self, root='~/data/MPII', split='train'):
         super(MPIIDataset, self).__init__()
@@ -56,6 +62,68 @@ class MPIIDataset(DatasetMixin):
         else:
             img, point, idx, shape = preprocess(img, keypoint, center, scale, self._split)
             return img, point, idx, self.head_sizes[i], shape
+
+    def to_hdf5(self):
+        """convert to hdf5 file format and save
+        """
+        import h5py
+
+        points_x = list()
+        points_y = list()
+        visibles = list()
+        angles = list()
+
+        # for each person, get keypoint
+        for keypoint in self.keypoints:
+            xx = np.array(keypoint['x']).astype(np.float32)
+            yy = np.array(keypoint['y']).astype(np.float32)
+            visible = np.array(keypoint['visible']).astype(np.float32)
+            keypoint['visible']
+
+            points_x.append(xx)
+            points_y.append(yy)
+            visibles.append(visible)
+
+            point_pelvis = xx[6], yy[6]
+            point_thorax = xx[7], yy[7]
+
+            # to imagenary num
+            p_pel = point_pelvis[0] + 1j * point_pelvis[1]
+            p_thr = point_thorax[0] + 1j * point_thorax[1]
+
+            angle = 90 + np.angle(p_thr - p_pel, deg=True)
+            angles.append(angle)
+
+
+        # 2 x dsize x 16 -> dsize x 16 x 2 (None -> np.nan)
+        points = np.array([points_x, points_y]).transpose(1, 2, 0)
+        # np.nan -> 0
+        points = np.nan_to_num(points)
+
+        visibles = np.array(visibles)
+
+        angles = np.array(angles)
+        # np.nan -> 0
+        points = np.nan_to_num(points)
+
+        data_h5 = dict()
+        data_h5['normalize'] = np.array(self.head_sizes)
+        data_h5['center'] = np.array(self.centers)
+        data_h5['scale'] = np.array(self.scales) / 200
+        data_h5['part'] = points
+        data_h5['imgname'] = np.array(self.paths, dtype=bytes)
+        data_h5['visible'] = visibles
+
+        # https://github.com/umich-vl/pose-hg-train/blob/master/src/misc/mpii.py
+        # Get angle from pelvis (6) to thorax (7)
+        data_h5['torsoangle'] = angles
+
+        with h5py.File(f'mpii-{self._split}.h5', mode='w') as f:
+            f.update(data_h5)
+
+        with open(f'mpii-{self._split}_images.txt', 'w') as f:
+            for path in self.paths:
+                f.write(f'{path}\n')
 
 
 def read_mpii_annots(fname, split):
@@ -199,6 +267,7 @@ def preprocess(img, keypoint, center, scale, mode='train'):
     if mode == 'train':
         points_resized = transforms.resize_point(points, (ymax-ymin, xmax-xmin), (64, 64))
         points_resized = points_resized.astype(np.int64)
+        # FIXME: this may cause the degradation of performance (ankle may not be contained)
         points_resized[points_resized < 0] = 0
         points_resized[points_resized > 63] = 63
 
@@ -228,5 +297,6 @@ def preprocess(img, keypoint, center, scale, mode='train'):
 
 
 if __name__ == '__main__':
-    dataset = MPIIDataset()
-    dataset.get_example(15)
+    dataset = MPIIDataset(split='val')
+    dataset.to_hdf5()
+    # dataset.get_example(15)
