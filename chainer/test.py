@@ -41,12 +41,30 @@ class DatasetTest(unittest.TestCase):
         plt.imshow(img_pose.transpose(1, 2, 0).astype(np.uint8))
         plt.show()
 
+    def value_train(self):
+        data = MPIIDataset(split='train')
+        annot = h5py.File('../pose-hg-demo/annot/train.h5')
+
+        idx = 0
+        # center of a person
+        center = data.centers[idx]
+        print('simeq', center, annot['center'][idx])
+        # keypoints of a person
+        point = np.array((data.keypoints[idx]['x'], data.keypoints[idx]['y'])).T
+        print('eq', point, annot['part'][idx])
+        # head_size (for PCKh)
+        head_size =  data.head_sizes[idx]
+        print('eq', head_size, annot['normalize'][idx],)
+        # scale of a person (for cropping)
+        scale = data.scales[idx]
+        print('simeq', scale, annot['scale'][idx])
+
+
 class MetricsTest(unittest.TestCase):
 
     def setUp(self):
-        self.dataset = MPIIDataset(split='val')
         # NOTE: their validation and our validation is not identical.
-        self.preds = h5py.File('../../pose-hg-demo/preds/valid-example.h5')['preds'].value
+        self.preds = h5py.File('../../valid-example.h5')['preds'].value
         annot = h5py.File('../../pose-hg-demo/annot/valid.h5')
 
         self.annot = dict()
@@ -79,6 +97,10 @@ class MetricsTest(unittest.TestCase):
             scales.append(scale)
 
         from eval import pckh_score
+        points = np.array(points)
+        scales = np.array(scales)
+        indices = np.array(indices)
+
         corrects, counts = pckh_score(points, self.preds[:, :, ::-1], indices, scales)
 
         # ignores 6, 7, 8
@@ -93,11 +115,9 @@ class MetricsTest(unittest.TestCase):
         # this outputs same score with pose-hg-demo/main.lua
         print(scores)
 
-        # assert(len(self.dataset) == self.preds.shape[0])
-        # for i in range(self.dataset):
-        #     img, label, idx, scale, shape = self.dataset[i]
-        #     label, self.preds[i]
-
 
 if __name__ == '__main__':
-    unittest.main()
+    met = MetricsTest()
+    met.setUp()
+    met.evaluate()
+    # unittest.main()
