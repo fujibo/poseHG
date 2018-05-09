@@ -44,3 +44,8 @@ here comes a table soon.
 
 ## Future work
 - [ ] combine with detection (as an application).
+
+## Road for Reproduction
+- [x] metrics
+- [ ] check pre-process (by saving annot file by myself)
+- [ ] check weight (train)
