@@ -36,26 +36,39 @@ def pckh_score(keypoint_true, keypoint_pred, idx, scale):
     return correct, size
 
 
-def evaluate(model, dataset, device=-1):
+def evaluate(model, dataset, device=-1, flip=False):
 
-    data_iter = chainer.iterators.MultithreadIterator(dataset, 100, repeat=False, shuffle=False)
+    batch_size = 50
+    data_iter = chainer.iterators.MultithreadIterator(dataset, batch_size, repeat=False, shuffle=False)
 
     corrects = list()
     counts = list()
 
     for it, batch in enumerate(data_iter):
         # print progress
-        print(f'{100*it:04d} / {len(dataset):04d}', end='\r')
+        print(f'{batch_size*it:04d} / {len(dataset):04d}', end='\r')
 
         img, label, idx, scale, shape = concat_examples(batch)
+        N, C, H, W = img.shape
+
+        if flip:
+            img = np.array((img, img[:, :, :, ::-1]))
+            img = img.reshape(N*2, C, H, W)
+
         if device >= 0:
             img = cuda.to_gpu(img)
 
         with chainer.no_backprop_mode():
             # (N, 3, 256, 256) -> (N, 16, 64, 64)
+
             _output, output = model(img)
 
         output = output.array
+
+        if flip:
+            output = output.reshape((2, N, ) + output.shape[1:])
+            output = (output[0] + output[1, :, :, :, ::-1]) / 2
+
         N, C, H, W = output.shape
 
         keypoints = list()
@@ -95,6 +108,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=-1)
+    parser.add_argument('--flip', action='store_true', help='test time augment')
     parser.add_argument('--model', default='')
     parser.add_argument('--snapshot', default='')
 
@@ -115,7 +129,7 @@ def main():
 
     dataset = MPIIDataset(split='val')
     with chainer.using_config('train', False):
-        scores = evaluate(model, dataset, args.gpu)
+        scores = evaluate(model, dataset, args.gpu, args.flip)
     print(scores)
 
 
