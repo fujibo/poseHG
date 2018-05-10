@@ -66,8 +66,12 @@ def evaluate(model, dataset, device=-1, flip=False):
         output = output.array
 
         if flip:
+            # {'head': [8, 9], 'shoulder': [12, 13], 'elbow': [11, 14], 'wrist': [10, 15], 'hip': [2, 3], 'knee': [1, 4], 'ankle': [0, 5]}
+            # correct bias
+            flipped_idx = [5, 4, 3, 2, 1, 0, 6, 7, 8, 9, 15, 14, 13, 12, 11, 10]
+
             output = output.reshape((2, N, ) + output.shape[1:])
-            output = (output[0] + output[1, :, :, :, ::-1]) / 2
+            output = (output[0] + output[1, :, flipped_idx, :, ::-1].transpose(1, 0, 2, 3)) / 2
 
         N, C, H, W = output.shape
 
