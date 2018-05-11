@@ -199,8 +199,10 @@ def read_mpii_annots(fname, split):
             SC_BIAS = 0.8 * 0.75
             head_size.append(SC_BIAS * np.linalg.norm([an.x2 - an.x1, an.y2 - an.y1]))
 
-            center = [an.objpos.x, an.objpos.y]
-            scale = an.scale * 200
+            # pose-hg-train/src/util/dataset/mpii.lua Dataset:getPartInfo
+            # --Small adjustment so cropping is less likely to take feet out
+            center = [an.objpos.x, an.objpos.y + 15 * an.scale]
+            scale = an.scale * 200 * 1.25
 
             paths.append(path)
             keypoints.append(keypoint)
