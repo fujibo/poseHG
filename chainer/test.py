@@ -48,7 +48,7 @@ class DatasetTest(unittest.TestCase):
         idx = 0
         # center of a person
         center = data.centers[idx]
-        print('simeq', center, annot['center'][idx])
+        print('eq', center, annot['center'][idx])
         # keypoints of a person
         point = np.array((data.keypoints[idx]['x'], data.keypoints[idx]['y'])).T
         print('eq', point, annot['part'][idx])
@@ -57,7 +57,7 @@ class DatasetTest(unittest.TestCase):
         print('eq', head_size, annot['normalize'][idx],)
         # scale of a person (for cropping)
         scale = data.scales[idx]
-        print('simeq', scale, annot['scale'][idx])
+        print('eq', scale, annot['scale'][idx])
 
 
 class MetricsTest(unittest.TestCase):
