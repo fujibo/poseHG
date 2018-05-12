@@ -91,6 +91,9 @@ def main():
     chainer.config.train = False
 
     img = utils.read_image(args.image)
+    # expected properties
+    # - A person is in the center of the image
+    # - the height of this image == 1.25 * a person's scale (= height)
     img_resized = transforms.resize(img, (256, 256))
     img_resized = img_resized[np.newaxis]
 
