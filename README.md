@@ -30,6 +30,11 @@ python eval.py --gpu 0 --model ./model.npz
 
 ### demo
 if you set filename like sample.jpg, you can get input.jpg, output.jpg. *If you want to run in cpu mode, you just set `--gpu -1`*.
+
+expected properties
+- A person is in the center of the image
+- the height of this image == 1.25 * a person's scale (= height)
+
 ```bash
 python demo.py --gpu 0 --image filename --model ./model.npz
 ```
