@@ -66,7 +66,7 @@ def main():
 
     if devices['main'] >= 0:
         cuda.get_device_from_id(devices['main']).use()
-    
+
     # 2.5 / 6 * 32
     # optimizer = chainer.optimizers.RMSprop(lr=1.33e-3)
     optimizer = chainer.optimizers.RMSprop(lr=2.5e-4)
@@ -77,7 +77,7 @@ def main():
         batch_size = 32
     else:
         batch_size = 6
-    
+
     train_iter = chainer.iterators.MultithreadIterator(train_data, batch_size, repeat=True, shuffle=True, n_threads=3)
 
     updater = training.ParallelUpdater(train_iter, optimizer, devices=devices)
@@ -88,7 +88,7 @@ def main():
     trainer.extend(extensions.ProgressBar(update_interval=10))
     trainer.extend(extensions.PrintReport(['epoch', 'lr', 'main/loss']))
     trainer.extend(extensions.LogReport())
-    trainer.extend(extensions.ExponentialShift('lr', 0.1),
+    trainer.extend(extensions.ExponentialShift('lr', 0.2),
                    trigger=(50, 'epoch'))
     trainer.extend(
         extensions.snapshot(filename='snapshot_epoch_{.updater.epoch}'),
