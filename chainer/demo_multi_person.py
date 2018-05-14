@@ -56,10 +56,12 @@ def main():
     bbox_persons = list()
     for ymin, xmin, ymax, xmax in bbox:
         scale = ymax - ymin
-        center = (xmin + xmax) / 2, (ymin + ymax) / 2
 
         # this is for ankle (also used in training with mpii dataset)
-        center[1] += 15 / 200 * scale
+        offset = 15 / 200 * scale
+        center = (xmin + xmax) / 2, (ymin + ymax) / 2 + offset
+
+        # this is for ankle (also used in training with mpii dataset)
         scale *= 1.25
 
         xmin, xmax = center[0] - scale / 2, center[0] + scale / 2
@@ -81,6 +83,8 @@ def main():
     img_persons = np.array(img_persons)
     bbox_persons = np.array(bbox_persons)
 
+    utils.write_image(utils.tile_images(img_persons, n_col=2), 'tiled.jpg')
+
     # estimate poses
     if args.gpu >= 0:
         img_persons = cuda.to_gpu(img_persons)
@@ -93,6 +97,7 @@ def main():
     R, C, H, W = outputs.shape
 
     # heatmap to keypoint
+    # R, C, H, W -> R, C, 2
     keypoints = list()
     for output in outputs:
         # (16, 64, 64) -> (16, )
@@ -105,16 +110,20 @@ def main():
     keypoint_persons = list()
     for keypoint, bbox_person in zip(keypoints, bbox_persons):
         ymin, xmin, ymax, xmax = bbox_person
-        keypoint = transforms.resize_point(keypoint[None], (ymax-ymin, xmax-xmin))[0]
+        keypoint = transforms.resize_point(keypoint, (H, W), (ymax-ymin, xmax-xmin))
         keypoint_person = keypoint + np.array((ymin, xmin))
         keypoint_persons.append(keypoint_person)
 
+    # visualize
     img = cv2.imread(args.image)
     visualizer = MPIIVisualizer()
 
     img_pose = img.copy()
-    for keypoint_person in keypoint_persons:
+    for keypoint_person, bbox_person in zip(keypoint_persons, bbox_persons):
+        ymin, xmin, ymax, xmax = bbox_person
+
         img_pose = visualizer.run(img_pose, keypoint_person)
+        img_pose = cv2.rectangle(img_pose, (xmin, ymin), (xmax, ymax), (0, 255, 255), 50)
 
     cv2.imwrite('input.jpg', img)
     cv2.imwrite('output.jpg', img_pose)
