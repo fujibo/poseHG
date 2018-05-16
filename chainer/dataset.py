@@ -326,7 +326,7 @@ def preprocess(img, keypoint, center, scale, mode='train'):
         # color
         weight = np.random.uniform(0.6, 1.4, size=3)[:, None, None]
         img = weight * img
-        img = np.clip(img, 0.0, 255.0)
+        img = np.clip(img, 0.0, 1.0)
 
         img = img.astype(np.float32)
         return img, heatmap, indices
