@@ -2,6 +2,37 @@ import chainer
 from chainer import functions as F
 from chainer import links as L
 
+from chainer import initializer, initializers
+from chainer.backends import cuda
+
+import math
+
+
+class UniformRange(initializer.Initializer):
+
+    """Initializes array with a scaled uniform distribution.
+    Each element of the array is initialized by the value drawn
+    independently from uniform distribution :math:`[a, b]`.
+    Attributes:
+        ~UniformRange.a (float): A constant that determines the
+            min of the uniform distribution.
+        ~UniformRange.b (float): A constant that determines the
+            max of the uniform distribution.
+        ~UniformRange.dtype: Data type specifier.
+    """
+
+    def __init__(self, a=0.0, b=1.0, dtype=None):
+        self.a = a
+        self.b = b
+        super(UniformRange, self).__init__(dtype)
+
+    def __call__(self, array):
+        if self.dtype is not None:
+            assert array.dtype == self.dtype
+        xp = cuda.get_array_module(array)
+        array[...] = xp.random.uniform(
+            low=self.a, high=self.b, size=array.shape)
+
 
 class ResidualModule(chainer.Chain):
     """docstring for ResidualModule."""
@@ -12,18 +43,21 @@ class ResidualModule(chainer.Chain):
 
         out_channels_half = out_channels // 2
 
+        gamma_init = UniformRange()
+        conv_init = initializers.LeCunUniform(scale=1/math.sqrt(3))
+
         with self.init_scope():
             # for skip layer
             if in_channels != out_channels:
-                self.conv0 = L.Convolution2D(in_channels, out_channels, (1, 1))
-                self.bn0 = L.BatchNormalization(out_channels)
+                self.conv0 = L.Convolution2D(in_channels, out_channels, (1, 1), initialW=conv_init)
+                self.bn0 = L.BatchNormalization(out_channels, eps=1e-5, initial_gamma=gamma_init)
 
-            self.conv1 = L.Convolution2D(in_channels, out_channels_half, (1, 1))
-            self.bn1 = L.BatchNormalization(out_channels_half)
-            self.conv2 = L.Convolution2D(out_channels_half, out_channels_half, (3, 3), pad=1)
-            self.bn2 = L.BatchNormalization(out_channels_half)
-            self.conv3 = L.Convolution2D(out_channels_half, out_channels, (1, 1))
-            self.bn3 = L.BatchNormalization(out_channels)
+            self.conv1 = L.Convolution2D(in_channels, out_channels_half, (1, 1), initialW=conv_init)
+            self.bn1 = L.BatchNormalization(out_channels_half, eps=1e-5, initial_gamma=gamma_init)
+            self.conv2 = L.Convolution2D(out_channels_half, out_channels_half, (3, 3), pad=1, initialW=conv_init)
+            self.bn2 = L.BatchNormalization(out_channels_half, eps=1e-5, initial_gamma=gamma_init)
+            self.conv3 = L.Convolution2D(out_channels_half, out_channels, (1, 1), initialW=conv_init)
+            self.bn3 = L.BatchNormalization(out_channels, eps=1e-5, initial_gamma=gamma_init)
 
     def __call__(self, x):
         h = F.relu(self.bn1(self.conv1(x)))
@@ -83,9 +117,12 @@ class StackedHG(chainer.Chain):
     """docstring for StackedHG."""
     def __init__(self, out_channels):
         super(StackedHG, self).__init__()
+        gamma_init = UniformRange()
+        conv_init = initializers.LeCunUniform(scale=1/math.sqrt(3))
+
         with self.init_scope():
-            self.conv0 = L.Convolution2D(3, 64, ksize=(7, 7), stride=2, pad=3)
-            self.bn0 = L.BatchNormalization(64)
+            self.conv0 = L.Convolution2D(3, 64, ksize=(7, 7), stride=2, pad=3, initialW=conv_init)
+            self.bn0 = L.BatchNormalization(64, eps=1e-5, initial_gamma=gamma_init)
             self.res0 = ResidualModule(64, 128)
 
             self.res1_1 = ResidualModule(128, 128)
@@ -93,23 +130,23 @@ class StackedHG(chainer.Chain):
             self.res1_3 = ResidualModule(128, 256)
             self.hg1 = HGBlock(256, 512)
 
-            self.conv1_1 = L.Convolution2D(512, 512, (1, 1))
-            self.bn1_1 = L.BatchNormalization(512)
-            self.conv1_2 = L.Convolution2D(512, 256, (1, 1))
-            self.bn1_2 = L.BatchNormalization(256)
+            self.conv1_1 = L.Convolution2D(512, 512, (1, 1), initialW=conv_init)
+            self.bn1_1 = L.BatchNormalization(512, eps=1e-5, initial_gamma=gamma_init)
+            self.conv1_2 = L.Convolution2D(512, 256, (1, 1), initialW=conv_init)
+            self.bn1_2 = L.BatchNormalization(256, eps=1e-5, initial_gamma=gamma_init)
 
-            self.conv1_3a = L.Convolution2D(256, out_channels, (1, 1))
-            self.conv1_4a = L.Convolution2D(out_channels, 256+128, (1, 1))
-            self.conv1_3b = L.Convolution2D(256+128, 256+128, (1, 1))
+            self.conv1_3a = L.Convolution2D(256, out_channels, (1, 1), initialW=conv_init)
+            self.conv1_4a = L.Convolution2D(out_channels, 256+128, (1, 1), initialW=conv_init)
+            self.conv1_3b = L.Convolution2D(256+128, 256+128, (1, 1), initialW=conv_init)
 
             self.hg2 = HGBlock(256+128, 512)
 
-            self.conv2_1 = L.Convolution2D(512, 512, (1, 1))
-            self.bn2_1 = L.BatchNormalization(512)
-            self.conv2_2 = L.Convolution2D(512, 512, (1, 1))
-            self.bn2_2 = L.BatchNormalization(512)
+            self.conv2_1 = L.Convolution2D(512, 512, (1, 1), initialW=conv_init)
+            self.bn2_1 = L.BatchNormalization(512, eps=1e-5, initial_gamma=gamma_init)
+            self.conv2_2 = L.Convolution2D(512, 512, (1, 1), initialW=conv_init)
+            self.bn2_2 = L.BatchNormalization(512, eps=1e-5, initial_gamma=gamma_init)
 
-            self.conv2_3a = L.Convolution2D(512, out_channels, (1, 1))
+            self.conv2_3a = L.Convolution2D(512, out_channels, (1, 1), initialW=conv_init)
 
     def __call__(self, x):
         # (3, 256, 256) -> (64, 128, 128)
