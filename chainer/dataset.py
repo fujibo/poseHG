@@ -12,6 +12,24 @@ import scipy.io as sio
 from scipy.ndimage.filters import gaussian_filter
 
 
+def flip_heatmap(heatmap, copy=False):
+    """flip heatmap following image flipping
+    Args:
+        heatmap: np.ndarray shape [N, C, H, W]
+        copy: bool, default `False`
+    Returns:
+        heatmap: same shape
+    """
+    if copy:
+        heatmap = heatmap.copy()
+
+    # {'head': [8, 9], 'shoulder': [12, 13], 'elbow': [11, 14], 'wrist': [10, 15], 'hip': [2, 3], 'knee': [1, 4], 'ankle': [0, 5]}
+    # correct bias
+    flipped_idx = [5, 4, 3, 2, 1, 0, 6, 7, 8, 9, 15, 14, 13, 12, 11, 10]
+    heatmap = heatmap[:, flipped_idx, :, ::-1].transpose(1, 0, 2, 3)
+    return heatmap
+
+
 class MPIIDataset(DatasetMixin):
     """MPII dataset
     get_example returns img, heatmap, idx available for training
@@ -291,6 +309,21 @@ def preprocess(img, keypoint, center, scale, mode='train'):
         img = vision.zoom(img, scale_zoom)
         heatmap = vision.zoom(heatmap, scale_zoom)
 
+        # NOTE
+        # They use other data augmentations in pose-hg-train/src/pose.lua
+        # though they didn't report it in their paper.
+        # I decided to utilize them.
+
+        # flip
+        img, param = transforms.random_flip(img, x_random=True, return_param=True)
+
+        if param['x_flip']:
+            heatmap = flip_heatmap(heatmap[np.newaxis])[0]
+
+        # color
+        weight = np.random.uniform(0.6, 1.4, size=3)[:, None, None]
+        img = weight * img
+        img = np.clip(img, 0.0, 255.0)
 
         return img, heatmap, indices
 
