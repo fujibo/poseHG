@@ -53,6 +53,7 @@ def main():
 
     # expand bboxes and crop the image
     img = img / 255.
+    img = img.astype(np.float32)
 
     img_persons = list()
     bbox_persons = list()

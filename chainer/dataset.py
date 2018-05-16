@@ -26,7 +26,7 @@ def flip_heatmap(heatmap, copy=False):
     # {'head': [8, 9], 'shoulder': [12, 13], 'elbow': [11, 14], 'wrist': [10, 15], 'hip': [2, 3], 'knee': [1, 4], 'ankle': [0, 5]}
     # correct bias
     flipped_idx = [5, 4, 3, 2, 1, 0, 6, 7, 8, 9, 15, 14, 13, 12, 11, 10]
-    heatmap = heatmap[:, flipped_idx, :, ::-1].transpose(1, 0, 2, 3)
+    heatmap = heatmap[:, flipped_idx, :, ::-1]
     return heatmap
 
 
@@ -328,9 +328,12 @@ def preprocess(img, keypoint, center, scale, mode='train'):
         img = weight * img
         img = np.clip(img, 0.0, 255.0)
 
+        img = img.astype(np.float32)
         return img, heatmap, indices
 
     else:
+
+        img = img.astype(np.float32)
         return img, points, indices, (ymax-ymin, xmax-xmin)
 
 
