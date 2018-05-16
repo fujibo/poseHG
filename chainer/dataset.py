@@ -251,6 +251,9 @@ def preprocess(img, keypoint, center, scale, mode='train'):
         heatmap: shape 16x64x64
         indices: index available
     """
+    # [0, 255] -> [0, 1]
+    img = img / 255.
+
     # image processing
     shape = img.shape
 

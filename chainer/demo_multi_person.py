@@ -52,6 +52,8 @@ def main():
     bbox, label, score = bboxes[0], labels[0], scores[0]
 
     # expand bboxes and crop the image
+    img = img / 255.
+
     img_persons = list()
     bbox_persons = list()
     for ymin, xmin, ymax, xmax in bbox:
