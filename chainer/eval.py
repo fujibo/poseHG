@@ -69,7 +69,7 @@ def evaluate(model, dataset, device=-1, flip=False):
         if flip:
 
             output = output.reshape((2, N, ) + output.shape[1:])
-            output_flipped = flip_heatmap(output[1])
+            output_flipped = flip_heatmap(output[1], copy=True)
             output = (output[0] + output_flipped) / 2
 
         N, C, H, W = output.shape
