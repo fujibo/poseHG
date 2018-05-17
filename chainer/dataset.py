@@ -72,13 +72,16 @@ class MPIIDataset(DatasetMixin):
         center = self.centers[i]
         scale = self.scales[i]
 
+        img, point, idx, shape = preprocess(img, keypoint, center, scale)
+
         if self._split == 'train':
-            img, label, idx = preprocess(img, keypoint, center, scale, self._split)
+            label = point2heatmap(points, indices, shape)
+            img = augment_data(img)
+
             return img, label, idx
 
         # 'val' or 'test'
         else:
-            img, point, idx, shape = preprocess(img, keypoint, center, scale, self._split)
             return img, point, idx, self.head_sizes[i], shape
 
     def to_hdf5(self):
@@ -238,21 +241,86 @@ def read_mpii_annots(fname, split):
     return paths, keypoints, head_size, centers, scales
 
 
-def preprocess(img, keypoint, center, scale, mode='train'):
+def point2heatmap(points, indices, input_shape):
+    """convert keypoint of a person to heatmap
+    Args:
+        points: np.ndarray, shape [16, 2]
+        indices: np.ndarray, available point or not shape [16, ]
+        input_shape: tuple, input shape of an image of the person
+
+    Returns:
+        heatmap: shape [16, 64, 64]
+    """
+    points = transforms.resize_point(points, input_shape, (64, 64))
+    points = points.astype(np.int64)
+    # FIXME: this may cause the degradation of performance
+    # e.g. ankle may not be contained
+    points[points < 0] = 0
+    points[points > 63] = 63
+
+    heatmap = np.zeros((16, 64, 64), dtype=np.float32)
+    for i, (available, point) in enumerate(zip(indices, points)):
+        if available:
+            y, x = point
+            heatmap[i, y, x] = 1
+            heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
+
+    return heatmap
+
+
+def augment_data(img):
+    """data augmentation on image
+    Args:
+        img: shape [C, H, W]
+    Returns:
+        img: shape [C, H, W]
+    """
+    # rotate [-30, 30]
+    angle = np.random.uniform(-30, 30)
+    img = vision.rotate(img, angle)
+    heatmap = vision.rotate(heatmap, angle)
+
+    # scale [0.75, 1.25]
+    scale_zoom = np.random.uniform(0.75, 1.25)
+    img = vision.zoom(img, scale_zoom)
+    heatmap = vision.zoom(heatmap, scale_zoom)
+
+    # NOTE
+    # They use other data augmentations in pose-hg-train/src/pose.lua
+    # though they didn't report it in their paper.
+    # I decided to utilize them.
+
+    # flip
+    img, param = transforms.random_flip(img, x_random=True, return_param=True)
+
+    if param['x_flip']:
+        heatmap = flip_heatmap(heatmap[np.newaxis])[0]
+
+    # color
+    weight = np.random.uniform(0.6, 1.4, size=3)[:, None, None]
+    img = weight * img
+    img = np.clip(img, 0.0, 1.0)
+
+    img = img.astype(np.float32)
+    return img
+
+
+def preprocess(img, keypoint, center, scale):
     """preprocess image and keypoint
     Args:
         img: CxHxW
         keypoint: dict {'x': [None]*16, 'y': [None]*16, 'visible': [None]*16}
         center: [x, y] center of a person
         scale: float, size of a person
-        mode: 'train', 'val', 'test'
     Returns:
-        img: shape Cx256x256, (not copied)
-        heatmap: shape 16x64x64
+        img: shape [C, 256, 256], (not copied)
+        points: shape [16, 2]
         indices: index available
+        image_shape:
     """
     # [0, 255] -> [0, 1]
     img = img / 255.
+    img = img.astype(np.float32)
 
     # image processing
     shape = img.shape
@@ -287,54 +355,9 @@ def preprocess(img, keypoint, center, scale, mode='train'):
     points = np.array(points)
     indices = np.array(indices)
 
-    if mode == 'train':
-        points_resized = transforms.resize_point(points, (ymax-ymin, xmax-xmin), (64, 64))
-        points_resized = points_resized.astype(np.int64)
-        # FIXME: this may cause the degradation of performance (ankle may not be contained)
-        points_resized[points_resized < 0] = 0
-        points_resized[points_resized > 63] = 63
+    image_shape = ymax - ymin, xmax - xmin
 
-        heatmap = np.zeros((16, 64, 64), dtype=np.float32)
-        for i, (available, point) in enumerate(zip(indices, points_resized)):
-            if available:
-                y, x = point
-                heatmap[i, y, x] = 1
-                heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
-
-        # data augmetation
-        # rotate [-30, 30]
-        angle = np.random.uniform(-30, 30)
-        img = vision.rotate(img, angle)
-        heatmap = vision.rotate(heatmap, angle)
-
-        # scale [0.75, 1.25]
-        scale_zoom = np.random.uniform(0.75, 1.25)
-        img = vision.zoom(img, scale_zoom)
-        heatmap = vision.zoom(heatmap, scale_zoom)
-
-        # NOTE
-        # They use other data augmentations in pose-hg-train/src/pose.lua
-        # though they didn't report it in their paper.
-        # I decided to utilize them.
-
-        # flip
-        img, param = transforms.random_flip(img, x_random=True, return_param=True)
-
-        if param['x_flip']:
-            heatmap = flip_heatmap(heatmap[np.newaxis])[0]
-
-        # color
-        weight = np.random.uniform(0.6, 1.4, size=3)[:, None, None]
-        img = weight * img
-        img = np.clip(img, 0.0, 1.0)
-
-        img = img.astype(np.float32)
-        return img, heatmap, indices
-
-    else:
-
-        img = img.astype(np.float32)
-        return img, points, indices, (ymax-ymin, xmax-xmin)
+    return img, points, indices, image_shape
 
 
 if __name__ == '__main__':
