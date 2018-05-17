@@ -5,7 +5,8 @@ from chainercv import transforms
 
 import numpy as np
 
-from dataset import MPIIDataset, flip_heatmap
+from dataset import MPIIDataset
+from utils.vision import flip_heatmap
 import os
 
 from chainer.dataset import concat_examples

@@ -2,7 +2,7 @@ import chainer
 from chainer.dataset import DatasetMixin
 from chainercv import transforms, utils
 
-from libs import vision
+from utils import vision
 
 import numpy as np
 import  pickle
@@ -10,24 +10,6 @@ import  pickle
 import os
 import scipy.io as sio
 from scipy.ndimage.filters import gaussian_filter
-
-
-def flip_heatmap(heatmap, copy=False):
-    """flip heatmap following image flipping
-    Args:
-        heatmap: np.ndarray shape [N, C, H, W]
-        copy: bool, default `False`
-    Returns:
-        heatmap: same shape
-    """
-    if copy:
-        heatmap = heatmap.copy()
-
-    # {'head': [8, 9], 'shoulder': [12, 13], 'elbow': [11, 14], 'wrist': [10, 15], 'hip': [2, 3], 'knee': [1, 4], 'ankle': [0, 5]}
-    # correct bias
-    flipped_idx = [5, 4, 3, 2, 1, 0, 6, 7, 8, 9, 15, 14, 13, 12, 11, 10]
-    heatmap = heatmap[:, flipped_idx, :, ::-1]
-    return heatmap
 
 
 class MPIIDataset(DatasetMixin):
@@ -52,7 +34,7 @@ class MPIIDataset(DatasetMixin):
         self._split = split
 
         fname = f'{self._root}/annotations/mpii_human_pose_v1_u12_1.mat'
-        paths, keypoints, head_sizes, centers, scales =  read_mpii_annots(fname, split)
+        paths, keypoints, head_sizes, centers, scales =  _read_mpii_annots(fname, split)
 
         self.paths = paths
         self.keypoints = keypoints
@@ -147,7 +129,7 @@ class MPIIDataset(DatasetMixin):
                 f.write(f'{path}\n')
 
 
-def read_mpii_annots(fname, split):
+def _read_mpii_annots(fname, split):
     """
     Args:
         fname: str
@@ -294,7 +276,7 @@ def augment_data(img):
     img, param = transforms.random_flip(img, x_random=True, return_param=True)
 
     if param['x_flip']:
-        heatmap = flip_heatmap(heatmap[np.newaxis])[0]
+        heatmap = vision.flip_heatmap(heatmap[np.newaxis])[0]
 
     # color
     weight = np.random.uniform(0.6, 1.4, size=3)[:, None, None]
