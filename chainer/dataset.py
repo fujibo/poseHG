@@ -57,8 +57,8 @@ class MPIIDataset(DatasetMixin):
         img, point, idx, shape = preprocess(img, keypoint, center, scale)
 
         if self._split == 'train':
-            label = point2heatmap(points, indices, shape)
-            img = augment_data(img)
+            label = point2heatmap(point, idx, shape)
+            img = augment_data(img, label)
 
             return img, label, idx
 
@@ -249,22 +249,27 @@ def point2heatmap(points, indices, input_shape):
     return heatmap
 
 
-def augment_data(img):
+def augment_data(img, heatmap=None):
     """data augmentation on image
     Args:
         img: shape [C, H, W]
+        heatmap: shape [16, 64, 64] or None
     Returns:
         img: shape [C, H, W]
+        heatmap: shape [16, 64, 64] or None
     """
     # rotate [-30, 30]
     angle = np.random.uniform(-30, 30)
     img = vision.rotate(img, angle)
-    heatmap = vision.rotate(heatmap, angle)
+
+    if heatmap is not None:
+        heatmap = vision.rotate(heatmap, angle)
 
     # scale [0.75, 1.25]
     scale_zoom = np.random.uniform(0.75, 1.25)
     img = vision.zoom(img, scale_zoom)
-    heatmap = vision.zoom(heatmap, scale_zoom)
+    if heatmap is not None:
+        heatmap = vision.zoom(heatmap, scale_zoom)
 
     # NOTE
     # They use other data augmentations in pose-hg-train/src/pose.lua
@@ -274,7 +279,7 @@ def augment_data(img):
     # flip
     img, param = transforms.random_flip(img, x_random=True, return_param=True)
 
-    if param['x_flip']:
+    if param['x_flip'] and heatmap is not None:
         heatmap = vision.flip_heatmap(heatmap[np.newaxis])[0]
 
     # color
