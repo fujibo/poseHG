@@ -234,18 +234,17 @@ def point2heatmap(points, indices, input_shape):
         heatmap: shape [16, 64, 64]
     """
     points = transforms.resize_point(points, input_shape, (64, 64))
-    points = points.astype(np.int64)
-    # FIXME: this may cause the degradation of performance
-    # e.g. ankle may not be contained
-    points[points < 0] = 0
-    points[points > 63] = 63
 
+    # pose-hg-train/src/utils/img.lua drawGaussian
+    # pose-hg-train/src/utils/pose.lua generateSample
     heatmap = np.zeros((16, 64, 64), dtype=np.float32)
+    sigma = 1.0
     for i, (available, point) in enumerate(zip(indices, points)):
         if available:
-            y, x = point
-            heatmap[i, y, x] = 1
-            heatmap[i] = gaussian_filter(heatmap[i], sigma=1)
+            coordinates = np.array(np.meshgrid(range(64), range(64)))
+            diff = coordinates - point[:, None, None]
+            dist = np.sum(diff ** 2, axis=0)
+            heatmap[i] = np.exp(-dist / (2 * sigma**2))
 
     return heatmap
 
