@@ -58,7 +58,7 @@ class MPIIDataset(DatasetMixin):
 
         if self._split == 'train':
             label = point2heatmap(point, idx, shape)
-            img = augment_data(img, label)
+            img, label = augment_data(img, label)
 
             return img, label, idx
 
@@ -288,7 +288,12 @@ def augment_data(img, heatmap=None):
     img = np.clip(img, 0.0, 1.0)
 
     img = img.astype(np.float32)
-    return img
+    
+    if heatmap is not None:
+        return img, heatmap
+
+    else:
+        return img
 
 
 def preprocess(img, keypoint, center, scale):
