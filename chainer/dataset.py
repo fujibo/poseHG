@@ -235,7 +235,7 @@ def point2heatmap(points, indices, input_shape):
     """
     points = transforms.resize_point(points, input_shape, (64, 64))
     # (y, x) -> (x, y)
-    points = points.T
+    points = points[:, ::-1]
     # pose-hg-train/src/utils/img.lua drawGaussian
     # pose-hg-train/src/utils/pose.lua generateSample
     heatmap = np.zeros((16, 64, 64), dtype=np.float32)
