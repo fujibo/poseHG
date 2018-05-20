@@ -226,7 +226,7 @@ def _read_mpii_annots(fname, split):
 def point2heatmap(points, indices, input_shape):
     """convert keypoint of a person to heatmap
     Args:
-        points: np.ndarray, shape [16, 2]
+        points: np.ndarray, shape [16, 2] (y, x)
         indices: np.ndarray, available point or not shape [16, ]
         input_shape: tuple, input shape of an image of the person
 
@@ -234,7 +234,8 @@ def point2heatmap(points, indices, input_shape):
         heatmap: shape [16, 64, 64]
     """
     points = transforms.resize_point(points, input_shape, (64, 64))
-
+    # (y, x) -> (x, y)
+    points = points.T
     # pose-hg-train/src/utils/img.lua drawGaussian
     # pose-hg-train/src/utils/pose.lua generateSample
     heatmap = np.zeros((16, 64, 64), dtype=np.float32)
@@ -288,7 +289,7 @@ def augment_data(img, heatmap=None):
     img = np.clip(img, 0.0, 1.0)
 
     img = img.astype(np.float32)
-    
+
     if heatmap is not None:
         return img, heatmap
 
@@ -305,7 +306,7 @@ def preprocess(img, keypoint, center, scale):
         scale: float, size of a person
     Returns:
         img: shape [C, 256, 256], (not copied)
-        points: shape [16, 2]
+        points: shape [16, 2], (y, x)
         indices: index available
         image_shape:
     """
