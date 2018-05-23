@@ -14,7 +14,6 @@ This paper provides **only single-person pose estimation**. If you want to do mu
 **this code is not perfectly same with the original code.**
 the known differences are as follows:
 - we used resizing (bilinear) instead of nearest neighbor upsampling. this is because chainer didn't provide NNupsampling.
-- we didn't use identical data they used. this is because their data in pose-hg-demo/annots is not identical with mpii original dataset.
 - we used the same images but didn't use the same validation data they provide. They use 1-4 people in each image while we use only a person for evaluation. **This may cause a little difference on scores**.
 
 Nevertheless, we scores almost same scores with them on MPII.
@@ -48,7 +47,7 @@ python train.py --gpu 0 --out results/result
 here comes a table soon.
 
 ## Future work
-- [ ] combine with detection (as an application).
+- [x] combine with detection (as an application).
 
 ## Road for Reproduction
 - [x] metrics
