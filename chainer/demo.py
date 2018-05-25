@@ -19,7 +19,7 @@ class MPIIVisualizer(object):
         8 - upper neck, 9 - head top, 10 - r wrist, 11 - r elbow,
         12 - r shoulder, 13 - l shoulder, 14 - l elbow, 15 - l wrist
         """
-        self.edges = ((0, 11), (11, 12), (12, 7),  # right arm
+        self.edges = ((10, 11), (11, 12), (12, 7),  # right arm
                       (9, 8), (8, 7),  # head
                       (15, 14), (14, 13), (13, 7),  # left arm
                       (7, 6),  # center

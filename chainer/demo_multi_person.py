@@ -126,7 +126,7 @@ def main():
         ymin, xmin, ymax, xmax = bbox_person
 
         img_pose = visualizer.run(img_pose, keypoint_person)
-        img_pose = cv2.rectangle(img_pose, (xmin, ymin), (xmax, ymax), (0, 255, 255), 50)
+        img_pose = cv2.rectangle(img_pose, (xmin, ymin), (xmax, ymax), (0, 255, 255), 10)
 
     cv2.imwrite('input.jpg', img)
     cv2.imwrite('output.jpg', img_pose)
