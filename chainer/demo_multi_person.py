@@ -86,7 +86,7 @@ def main():
     img_persons = np.array(img_persons)
     bbox_persons = np.array(bbox_persons)
 
-    utils.write_image(utils.tile_images(img_persons, n_col=2), 'tiled.jpg')
+    utils.write_image(utils.tile_images((255*img_persons).astype(np.float32), n_col=2), 'tiled.jpg')
 
     # estimate poses
     if args.gpu >= 0:
