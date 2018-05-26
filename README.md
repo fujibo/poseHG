@@ -22,12 +22,7 @@ The metric is PCKh@0.5
 ## How to execute
 pre-trained model is available at here. This will take several minutes.
 
-### evalution
-```bash
-python eval.py --gpu 0 --model ./model.npz
-```
-
-### demo
+### Demo
 if you set filename like sample.jpg, you can get input.jpg, output.jpg. *If you want to run in cpu mode, you just set `--gpu -1`*.
 
 expected properties
@@ -46,14 +41,20 @@ python demo_multi_person.py --gpu 0 --image filename --model ./model.npz
 
 we utilized SSD512 [2] for detecting people.
 
-### training
+### Training
 Training will take 2-4 days.
 ```bash
 python train.py --gpu 0 --out results/result
 ```
 
+### Evalution
+```bash
+python eval.py --gpu 0 --model ./model.npz
+```
+
 ## Results
 Comparison between the neural network weights of theirs and those of ours on my validation data. `+flip` denotes flipping as test time augmentation.
+
 |         | Head | Shoulder | Elbow | Wrist | Hip | Knee | Ankle | Total |
 | :---:   |:---: | :---:    | :---: | :---: |:---:|:---: | :---: | :---: |
 |my val, their weight | 0.975 | 0.960 | 0.901 | 0.861 | - | 0.853 | 0.823 | 0.896 |
