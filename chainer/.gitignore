@@ -3,3 +3,5 @@ results/
 *.sh
 *.jpg
 *.pickle
+models/
+data/
