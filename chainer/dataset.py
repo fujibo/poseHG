@@ -28,7 +28,7 @@ class MPIIDataset(DatasetMixin):
         8 - upper neck, 9 - head top, 10 - r wrist, 11 - r elbow,
         12 - r shoulder, 13 - l shoulder, 14 - l elbow, 15 - l wrist
     """
-    def __init__(self, root='~/data/MPII', split='train'):
+    def __init__(self, root='./data/MPII', split='train'):
         super(MPIIDataset, self).__init__()
         self._root = os.path.expanduser(root)
         self._split = split
@@ -121,10 +121,10 @@ class MPIIDataset(DatasetMixin):
         # Get angle from pelvis (6) to thorax (7)
         data_h5['torsoangle'] = angles
 
-        with h5py.File(f'mpii-{self._split}.h5', mode='w') as f:
+        with h5py.File(f'./data/mpii-{self._split}.h5', mode='w') as f:
             f.update(data_h5)
 
-        with open(f'mpii-{self._split}_images.txt', 'w') as f:
+        with open(f'./data/mpii-{self._split}_images.txt', 'w') as f:
             for path in self.paths:
                 f.write(f'{path}\n')
 
@@ -139,11 +139,11 @@ def _read_mpii_annots(fname, split):
         keypoints: list of dict
         head_size: list of float
     """
-    with open('./valid_images.txt') as f:
+    with open('./data/valid_images.txt') as f:
         text = f.read()
         validation = text.split('\n')[:-1]
 
-    path_cache = 'mpii.pickle'
+    path_cache = './data/mpii.pickle'
     if os.path.exists(path_cache):
         with open(path_cache, 'rb') as f:
             arr = pickle.load(f)
