@@ -40,7 +40,6 @@ def snap2model_trainer(path_snapshot, path_model=None):
     model = StackedHG(16)
     train_chain = TrainChain(model)
     optimizer = chainer.optimizers.RMSprop(lr=2.5e-4)
-    # optimizer = chainer.optimizers.MomentumSGD(lr=1e-6)
     optimizer.setup(train_chain)
 
     # original batch size 6
@@ -58,4 +57,3 @@ def snap2model_trainer(path_snapshot, path_model=None):
     else:
         chainer.serializers.save_npz(path_model, model)
         return None
-

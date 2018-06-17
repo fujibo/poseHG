@@ -9,6 +9,7 @@ This paper provides **only single-person pose estimation**. If you want to do mu
 - chainer==4.0.0
 - chainercv==0.9.0
 - opencv-python==3.4.0
+- google_drive_downloader==0.3.0
 
 ## NOTE
 **this code is not perfectly same with the original code.**
