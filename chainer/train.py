@@ -89,7 +89,7 @@ def main():
     trainer.extend(extensions.PrintReport(['epoch', 'lr', 'main/loss']))
     trainer.extend(extensions.LogReport())
     trainer.extend(extensions.ExponentialShift('lr', 0.2),
-                   trigger=(50, 'epoch'))
+                   trigger=(70, 'epoch'))
     trainer.extend(
         extensions.snapshot(filename='snapshot_epoch_{.updater.epoch}'),
         trigger=(10, 'epoch'))
