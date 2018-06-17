@@ -38,7 +38,7 @@ expected properties
 python demo.py --image filename
 ```
 
-## multi person
+### multi person
 If you have some people in an image, you have an option to detect people followed by estimating poses.
 
 ```bash
@@ -47,7 +47,7 @@ python demo_multi_person.py --image filename
 
 we utilized SSD512 [2] implemented in chainercv for detecting people.
 
-### Evalution
+### evalution
 ```bash
 python eval.py
 ```
