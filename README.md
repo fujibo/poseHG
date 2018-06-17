@@ -20,6 +20,11 @@ The known differences are as follows:
 
 ## How to execute
 A pre-trained model is utilized in the default settings. If you want to specify a model, you need to add `--model <model_path>` as an argument.
+We only provides chainer version.
+
+```bash
+cd chainer
+```
 
 ### Demo
 #### single person
@@ -72,6 +77,7 @@ Comparison between the neural network weights of theirs and those of ours on my 
 - [x] metrics
 - [ ] check pre-process (by saving annot file by myself)
 - [ ] check weight (train)
+- [ ] pytorch version
 
 ## Reference
 - [1] Alejandro Newell, Kaiyu Yang, and Jia Deng. Stacked hourglass networks for human pose estimation. In ECCV, pp. 483–499. Springer, 2016.
