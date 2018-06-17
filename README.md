@@ -20,7 +20,7 @@ The known differences are as follows:
 
 ## How to execute
 A pre-trained model is utilized in the default settings. If you want to specify a model, you need to add `--model <model_path>` as an argument.
-We only provides chainer version.
+We only provide chainer version.
 
 ```bash
 cd chainer
@@ -62,7 +62,7 @@ python train.py --gpu 0 --out results/result
 You can get a trained model at `./results/result/model.npz`.
 
 ## Results
-Comparison between the neural network weights of theirs and those of ours on my validation data. `+flip` denotes flipping as a test time augmentation.
+Comparison between the neural network weights of theirs and those of ours on our validation data. `+flip` denotes flipping as a test time augmentation.
 
 |         | Head | Shoulder | Elbow | Wrist | Hip | Knee | Ankle | Total |
 | :---:   |:---: | :---:    | :---: | :---: |:---:|:---: | :---: | :---: |
