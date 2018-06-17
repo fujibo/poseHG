@@ -2,7 +2,7 @@ pose-hg-demo (reimplementation)
 =====
 
 I reimplemented "Stacked hourglass networks for human pose estimation" [1] mainly following this author code.
-This paper provides **only single-person pose estimation**. If you want to do multi-person pose estimation like Openpose, you need to combine with detector like SSD [2]. We provide the code.
+This paper provides **only single-person pose estimation**. If you want to do multi-person pose estimation like Openpose, you need to combine this with a person detector like SSD [2]. We provide the code, `demo_multi_person.py`.
 
 ## Requirements
 - python==3.6.4
@@ -18,32 +18,32 @@ the known differences are as follows:
 - we used the same images but **didn't use the same validation data they provide.** They use 1-4 people in each image while we use only a person for evaluation. **Therefore, we reevaluated scores on my validation set.**
 
 ## How to execute
-pre-trained model is available at here. This will take several minutes.
+A pre-trained model is utilized in the default settings. If you want to specify a model, you need to add `--model <model_path>` as an argument.
 
 ### Demo
 #### single person
-if you set filename like sample.jpg, you can get input.jpg, output.jpg. *If you want to run in cpu mode, you just set `--gpu -1`*.
+if you set filename like sample.jpg, you can get input.jpg, output.jpg. *If you want to run in gpu mode, you just need to set `--gpu <GPU ID>`*.
 
 expected properties
 - A person is in the center of the image
 - the height of this image == 1.25 * a person's scale (= height)
 
 ```bash
-python demo.py --gpu 0 --image filename --model ./model.npz
+python demo.py --image filename
 ```
 
 ## multi person
 If you have some people in an image, you have an option to detect people followed by estimating poses.
 
 ```bash
-python demo_multi_person.py --gpu 0 --image filename --model ./model.npz
+python demo_multi_person.py --image filename
 ```
 
-we utilized SSD512 [2] for detecting people.
+we utilized SSD512 [2] implemented in chainercv for detecting people.
 
 ### Evalution
 ```bash
-python eval.py --gpu 0 --model ./model.npz
+python eval.py
 ```
 The metric is PCKh@0.5.
 
