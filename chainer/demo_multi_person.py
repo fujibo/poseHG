@@ -8,7 +8,7 @@ import numpy as np
 
 import os
 
-from demo import MPIIVisualizer
+from utils.demo_helper import MPIIVisualizer
 from net import StackedHG
 
 from snap2model import snap2model_trainer
@@ -18,7 +18,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=int, default=-1)
-    parser.add_argument('--model', default='')
+    parser.add_argument('--model', default='', help='if not specified, you download and use a pre-trained model.')
     parser.add_argument('--snapshot', default='')
     parser.add_argument('--image', type=str)
 
@@ -37,6 +37,15 @@ def main():
 
     elif args.snapshot:
         chainer.serializers.load_npz(snap2model_trainer(args.snapshot), model)
+
+    else:
+        # pre-trained model
+        model_path = './models/model_2018_05_22.npz'
+        if not os.path.exists(model_path):
+            gdd.download_file_from_google_drive(file_id='1rZZJRpqQKkncn30Igtk8KirgR96QlCFO', dest_path=model_path)
+
+        chainer.serializers.load_npz(model_path, model)
+
 
     if args.gpu >= 0:
         cuda.get_device_from_id(args.gpu).use()
