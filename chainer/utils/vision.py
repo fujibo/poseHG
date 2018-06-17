@@ -35,19 +35,6 @@ def rotate(image, angle):
     return rotated_image.transpose(2, 0, 1)
 
 
-def gamma_correct(image, gamma):
-    """gamma correction to image
-    Args:
-        image: 3 x 256 x 256, BGR
-        gamma: coefficient
-    Returns:
-        corrected image
-    """
-    corrected_image = np.power((image / 255), gamma)
-    corrected_image *= 255
-    return corrected_image
-
-
 def flip_heatmap(heatmap, copy=False):
     """flip heatmap following image flipping
     Args:
