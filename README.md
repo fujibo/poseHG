@@ -54,6 +54,7 @@ python eval.py
 The metric is PCKh@0.5.
 
 ### Training
+You need to download images of MPII at `./chainer/data/MPII/images` and annotations of it at `./chainer/data/MPII/annotations`.
 Training will take 2-4 days.
 ```bash
 python train.py --gpu 0 --out results/result
