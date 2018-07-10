@@ -17,6 +17,7 @@ This paper provides an **only single-person pose estimation**. If you want to do
 The known differences are as follows:
 - We used resizing (bilinear) instead of nearest neighbor upsampling for upsampling. This is because chainer didn't provide NNupsampling.
 - We used the same images but **didn't use the same validation data they provide.** They use 1-4 people in each image while we use only a person for evaluation. **Therefore, we reevaluated scores on our validation set.**
+- The network architecture they provided on github might not be identical with the one of a pre-trained model (a t7 file) they provide in their project page. For example, conv-bn-relu is used in their github code, while relu-bn-conv seems to be used in their t7 file.
 
 ## How to execute
 A pre-trained model is utilized in the default settings. If you want to specify a model, you need to add `--model <model_path>` as an argument.
