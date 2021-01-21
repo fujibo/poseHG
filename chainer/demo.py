@@ -7,6 +7,7 @@ import numpy as np
 import cv2
 
 import os
+import wget
 
 from snap2model import snap2model_trainer
 from utils.demo_helper import MPIIVisualizer
@@ -36,12 +37,11 @@ def main():
         chainer.serializers.load_npz(snap2model_trainer(args.snapshot), model)
 
     else:
-        # use pre-trained model
-        from google_drive_downloader import GoogleDriveDownloader as gdd
-        
         model_path = './models/model_2018_05_22.npz'
         if not os.path.exists(model_path):
-            gdd.download_file_from_google_drive(file_id='1rZZJRpqQKkncn30Igtk8KirgR96QlCFO', dest_path=model_path)
+            os.makedirs("models", exist_ok=True)
+            url = "https://github.com/fujibo/poseHG/releases/download/1.0.1/model_2018_05_22.npz"
+            wget.download(url, model_path)
 
         chainer.serializers.load_npz(model_path, model)
 
